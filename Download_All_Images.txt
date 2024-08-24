@@ -1,0 +1,99 @@
+// ==UserScript==
+// @name         Download All Images in one click
+// @namespace    http://tampermonkey.net/
+// @version      2.0
+// @author       Arjya_2.0_reloaded
+// @description  for more information please visit arjya404.netlify.app
+// @match        :///
+// @icon         https://cdn-icons-png.flaticon.com/512/149/149165.png
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Add CSS for the button
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .cool-button {
+            position: fixed;
+            top: 9vh;
+            right: 2vw;
+            z-index: 9999;
+            padding: 1vh 1vw;
+            font-size: 2.0vh;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(45deg, #ff6b6b, #f06595);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cool-button:hover {
+            background: linear-gradient(45deg, #f06595, #ff6b6b);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .cool-button:active {
+            background: linear-gradient(45deg, #e64980, #fa5252);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+            transform: translateY(0);
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add a button to the page to trigger the download
+    var button = document.createElement("button");
+    button.innerHTML = "Download";
+    button.className = "cool-button"; // Add the CSS class to the button
+    document.body.appendChild(button);
+
+    button.addEventListener("click", function() {
+        // Select all the text nodes containing the image URLs
+        var elements = document.querySelectorAll("body *"); // Select all elements within the body
+        var imageInfo = new Map(); // Use a Map to store unique URLs and their file names
+
+        elements.forEach(function(element) {
+            if (element.innerText.includes("Hero Title Image (Backup Link)") || element.innerText.includes("Banner Image (Backup Link)")) {
+                var regex = /https:\/\/m\.media-amazon\.com\/images\/S\/vcaws-image-intake-bucket-prod\/[^\s]+(\.png|\.jpg|\.jpeg)/g;
+                var matches = element.innerText.match(regex);
+                if (matches) {
+                    matches.forEach(function(url) {
+                        // Find the corresponding file name
+                        var fileNameMatch = element.innerText.match(/File Name : ([^\n]+)/);
+                        if (fileNameMatch) {
+                            var fileName = fileNameMatch[1].trim();
+                            imageInfo.set(url, fileName); // Add URL and file name to the Map
+                        }
+                    });
+                }
+            }
+        });
+
+        // Download each image with the corresponding file name
+        imageInfo.forEach(function(fileName, url) {
+            downloadImage(url, fileName);
+        });
+    });
+
+    async function downloadImage(url, fileName) {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const a = document.createElement("a");
+            const urlObject = URL.createObjectURL(blob);
+            a.href = urlObject;
+            a.download = fileName; // Use the file name from the Map
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(urlObject);
+        } catch (error) {
+            console.error('Error downloading image:', url, error);
+        }
+    }
+})();
